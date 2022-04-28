@@ -1,18 +1,25 @@
 package knox.sudoku;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.util.Collection;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -55,6 +62,11 @@ public class SudokuGUI extends JFrame {
     // the current guessed number for currentRow and currentCol
     private int guess = -1;
     
+    //hint row and column
+    private int hintRow = -1;
+    private int hintCol = -1;
+    
+    private boolean showLegalValues = false;
     // figuring out how big to make each button
     // honestly not sure how much detail is needed here with margins
 	protected final int MARGIN_SIZE = 5;
@@ -95,7 +107,12 @@ public class SudokuGUI extends JFrame {
 				int digit = key - '0';
 				System.out.println(key);
 				if (currentRow == row && currentCol == col) {
+					if(!sudoku.isLegal(row,  col, digit)) {
+						JOptionPane.showMessageDialog(null,
+								String.format("%d cannot go in row %d and col %d", digit, row, col));
+					} else {
 					sudoku.set(row, col, digit);
+					}
 				}
 				update();
 			}
@@ -116,6 +133,8 @@ public class SudokuGUI extends JFrame {
 			//System.out.printf("row %d, col %d, %s\n", row, col, e);
 			JButton button = (JButton)e.getSource();
 			
+			hintRow = -1;
+			hintCol = -1;
 			if (row == currentRow && col == currentCol) {
 				currentRow = -1;
 				currentCol = -1;
@@ -124,10 +143,14 @@ public class SudokuGUI extends JFrame {
 				currentRow = row;
 				currentCol = col;
 				
+				//if(showLegalValues) {
+					//Collection<Integer> legals = sudoku.getLegalValues(row, col);
+					//JOptionPane.showMessageDialog(null, legals.toString());
+				
 				// TODO: figure out some way that users can enter values
 				// A simple way to do this is to take keyboard input
 				// or you can cycle through possible legal values with each click
-				// or pop up a selector with only the legal valuess
+				// or pop up a selector with only the legal values
 				
 			} else {
 				// TODO: error dialog letting the user know that they cannot enter values
@@ -156,7 +179,10 @@ public class SudokuGUI extends JFrame {
     private void update() {
     	for (int row=0; row<numRows; row++) {
     		for (int col=0; col<numCols; col++) {
-    			if (row == currentRow && col == currentCol && sudoku.isBlank(row, col)) {
+    			if(hintRow == row && hintCol == col) {
+    				buttons[row][col].setBackground(Color.pink);
+    				setText(row, col, "");
+    			} else if (row == currentRow && col == currentCol && sudoku.isBlank(row, col)) {
     				// draw this grid square special!
     				// this is the grid square we are trying to enter value into
     				buttons[row][col].setForeground(Color.RED);
@@ -164,6 +190,10 @@ public class SudokuGUI extends JFrame {
     				// Maybe I should have used JLabel instead of JButton?
     				buttons[row][col].setBackground(Color.CYAN);
     				setText(row, col, "_");
+    				if(showLegalValues) {
+    					Collection<Integer> legals = sudoku.getLegalValues(row, col);
+    					JOptionPane.showMessageDialog(null, legals.toString());
+    				}
     			} else {
     				buttons[row][col].setForeground(FONT_COLOR);
 	    			int val = sudoku.get(row, col);
@@ -181,6 +211,7 @@ public class SudokuGUI extends JFrame {
 	
     private void createMenuBar() {
     	menuBar = new JMenuBar();
+    	
         
     	//
     	// File menu
@@ -199,6 +230,7 @@ public class SudokuGUI extends JFrame {
         addToMenu(file, "Save", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+            	
             	// TODO: save the current game to a file!
             	// HINT: Check the Util.java class for helpful methods
             	// HINT: check out JFileChooser
@@ -210,18 +242,20 @@ public class SudokuGUI extends JFrame {
                 repaint();
             }
         });
-        
+        //addToMenu(help, "Show Legal Value", new ActionListener())
         addToMenu(file, "Load", new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            	// TODO: load a saved game from a file
-            	// HINT: Check the Util.java class for helpful methods
-            	// HINT: check out JFileChooser
-            	// https://docs.oracle.com/javase/tutorial/uiswing/components/filechooser.html
-            	JOptionPane.showMessageDialog(null,
-            		    "TODO: load a saved game from a file\n"
-            		    + "HINT: Check the Util.java class for helpful methods\n"
-            		    + "HINT: Check out JFileChooser");
+            	JFileChooser jfc = new JFileChooser(new File("."));
+            	
+            	int returnValue = jfc.showOpenDialog(null);
+            	
+            	if(returnValue == JFileChooser.APPROVE_OPTION) {
+            		File selectedFile = jfc.getSelectedFile();
+            		sudoku.load(selectedFile);
+            		JOptionPane.showMessageDialog(null,
+            				"Saved game to file" + selectedFile.getAbsolutePath());
+            	}
                 repaint();
             }
         });
@@ -235,15 +269,108 @@ public class SudokuGUI extends JFrame {
         addToMenu(help, "Hint", new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				for(int r=0; r<9; r++) {
+					for(int c=0; c<9; c++) {
+						if (sudoku.isBlank(r, c) && sudoku.getLegalValues(r, c).size() == 1) {
+							hintRow = r;
+							hintCol = c;
+							update();
+							return;
+						}
+					}
+				}
 				JOptionPane.showMessageDialog(null, "Give the user a hint! Highlight the most constrained square\n" + 
 						"which is the square where the fewest posssible values can go");
 			}
+        });
+        
+	        JMenuItem menuItem = new JCheckBoxMenuItem("Show Legals");
+			help.add(menuItem);
+	        menuItem.addItemListener (new ItemListener() {
+			@Override 
+			public void itemStateChanged(ItemEvent e) {
+				showLegalValues = !showLegalValues;
+			}
 		});
         
-        this.setJMenuBar(menuBar);
-    }
+    
+    JMenu end = new JMenu("End");
+    menuBar.add(end);
+    
+    addToMenu(end, "Submit", new ActionListener() {
+    	@Override
+		public void actionPerformed(ActionEvent e) {
+			if(!sudoku.gameOver()) {
+				System.out.println("Game is not over!");
+			}else if(sudoku.didIWin()==true) {
+				System.out.println("Woohoo YOU WIN!");
+			}else {
+				System.out.println("WaaWaa YOU LOSE!");
+			}
+    	}
+    });
     
     
+    JMenu color = new JMenu("Color");
+    menuBar.add(color);
+    
+    addToMenu(color, "Red", new ActionListener() {
+    	@Override
+		public void actionPerformed(ActionEvent e) {
+    		for(int r=0; r<9; r++) {
+				for(int c=0; c<9; c++) {
+					buttons[r][c].setBackground(Color.RED);	
+				}
+    		}
+    	}
+    });
+    
+    addToMenu(color, "Orange", new ActionListener() {
+    	@Override
+		public void actionPerformed(ActionEvent e) {
+    		for(int r=0; r<9; r++) {
+				for(int c=0; c<9; c++) {
+					buttons[r][c].setBackground(Color.ORANGE);	
+				}
+    		}
+    	}
+    });
+    	
+    addToMenu(color, "Yellow", new ActionListener() {
+        @Override
+    	public void actionPerformed(ActionEvent e) {
+        	for(int r=0; r<9; r++) {
+    			for(int c=0; c<9; c++) {
+    				buttons[r][c].setBackground(Color.YELLOW);	
+    			}
+        	}
+        }
+    });
+    
+    addToMenu(color, "Blue", new ActionListener() {
+        @Override
+    	public void actionPerformed(ActionEvent e) {
+        	for(int r=0; r<9; r++) {
+    			for(int c=0; c<9; c++) {
+    				buttons[r][c].setBackground(Color.BLUE);	
+    			}
+        	}
+        }
+    });
+    
+    addToMenu(color, "Green", new ActionListener() {
+        @Override
+    	public void actionPerformed(ActionEvent e) {
+        	for(int r=0; r<9; r++) {
+    			for(int c=0; c<9; c++) {
+    				buttons[r][c].setBackground(Color.GREEN);	
+    			}
+        	}
+        }
+    });
+    
+    this.setJMenuBar(menuBar);
+	}
     /**
      * Private helper method to put 
      * 
