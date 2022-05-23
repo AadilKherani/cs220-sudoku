@@ -245,9 +245,8 @@ public class SudokuGUI extends JFrame {
             		Util.writeToFile(selectedFile, board);
             		JOptionPane.showMessageDialog(null,
                 		    " Saved game to file" + selectedFile.getAbsolutePath());
-            		
-                update();
             	}
+            	repaint();
             }
         });
         
@@ -260,7 +259,7 @@ public class SudokuGUI extends JFrame {
             	
             	if(returnValue == JFileChooser.APPROVE_OPTION) {
             		File selectedFile = jfc.getSelectedFile();
-            		String board = Util.readFromFile(selectedFile);
+            		//String board = Util.readFromFile(selectedFile);
             		sudoku.load(selectedFile);
             		JOptionPane.showMessageDialog(null,
                 		    " Load game to file" + selectedFile.getAbsolutePath());
@@ -269,10 +268,10 @@ public class SudokuGUI extends JFrame {
             	// HINT: Check the Util.java class for helpful methods
             	// HINT: check out JFileChooser
             	// https://docs.oracle.com/javase/tutorial/uiswing/components/filechooser.html
-            	JOptionPane.showMessageDialog(null,
-            		    "TODO: load a saved game from a file\n"
-            		    + "HINT: Check the Util.java class for helpful methods\n"
-            		    + "HINT: Check out JFileChooser");
+            	//JOptionPane.showMessageDialog(null,
+            	//	    "TODO: load a saved game from a file\n"
+            	//	    + "HINT: Check the Util.java class for helpful methods\n"
+            	//	    + "HINT: Check out JFileChooser");
                 update();
             }
         });
@@ -311,7 +310,82 @@ public class SudokuGUI extends JFrame {
 				
 			}
         });
-        	
+    	
+    	JMenu end = new JMenu("End");
+        menuBar.add(end);
+
+        addToMenu(end, "Submit", new ActionListener() {
+        	@Override
+    		public void actionPerformed(ActionEvent e) {
+    			if(!sudoku.gameOver()) {
+    				System.out.println("Game is not over!");
+    			}else if(sudoku.didIWin()==true) {
+    				System.out.println("Woohoo YOU WIN!");
+    			}else {
+    				System.out.println("WaaWaa YOU LOSE!");
+    			}
+        	}
+        });
+
+
+        JMenu color = new JMenu("Color");
+        menuBar.add(color);
+
+        addToMenu(color, "Red", new ActionListener() {
+        	@Override
+    		public void actionPerformed(ActionEvent e) {
+        		for(int r=0; r<9; r++) {
+    				for(int c=0; c<9; c++) {
+    					buttons[r][c].setBackground(Color.RED);	
+    				}
+        		}
+        	}
+        });
+
+        addToMenu(color, "Orange", new ActionListener() {
+        	@Override
+    		public void actionPerformed(ActionEvent e) {
+        		for(int r=0; r<9; r++) {
+    				for(int c=0; c<9; c++) {
+    					buttons[r][c].setBackground(Color.ORANGE);	
+    				}
+        		}
+        	}
+        });
+
+        addToMenu(color, "Yellow", new ActionListener() {
+            @Override
+        	public void actionPerformed(ActionEvent e) {
+            	for(int r=0; r<9; r++) {
+        			for(int c=0; c<9; c++) {
+        				buttons[r][c].setBackground(Color.YELLOW);	
+        			}
+            	}
+            }
+        });
+
+        addToMenu(color, "Blue", new ActionListener() {
+            @Override
+        	public void actionPerformed(ActionEvent e) {
+            	for(int r=0; r<9; r++) {
+        			for(int c=0; c<9; c++) {
+        				buttons[r][c].setBackground(Color.BLUE);	
+        			}
+            	}
+            }
+        });
+
+        addToMenu(color, "Green", new ActionListener() {
+            @Override
+        	public void actionPerformed(ActionEvent e) {
+            	for(int r=0; r<9; r++) {
+        			for(int c=0; c<9; c++) {
+        				buttons[r][c].setBackground(Color.GREEN);	
+        			}
+            	}
+            }
+        });
+        
         this.setJMenuBar(menuBar);
     	}
     
